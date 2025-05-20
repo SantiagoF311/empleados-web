@@ -1,12 +1,16 @@
-import { Router } from 'express';
-const router = Router();
-import { obtenerTodos, crearCargo, obtenerPorId, actualizarCargo, eliminarCargo } from '../controllers/cargosController';
-import { verificarToken } from '../controllers/authController';
+const router = require('express').Router();
+const {
+  crear,
+  listar,
+  obtener,
+  actualizar,
+  eliminar
+} = require('../controllers/cargosController');
 
-router.get('/', obtenerTodos);
-router.post('/', verificarToken, crearCargo);
-router.get('/:id', obtenerPorId);
-router.put('/:id', verificarToken, actualizarCargo);
-router.delete('/:id', verificarToken, eliminarCargo);
+router.post('/', crear);
+router.get('/', listar);
+router.get('/:id', obtener);
+router.put('/:id', actualizar);
+router.delete('/:id', eliminar);
 
-export default router;
+module.exports = router;
