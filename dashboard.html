@@ -1,19 +1,19 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Cargos - Gestión de Empleados</title>
-    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
     <div class="dashboard">
         <!-- Navbar superior -->
         <nav class="top-navbar">
-            <img class="logo" src="images/logo.png">
+            <img class="logo" src="images/logo.png" />
             <div class="search-container">
-                <input class="search" placeholder="Buscar...">
-                <a href="index.html" class="login-btn">Login / Cuenta</a>
+                <input class="search" placeholder="Buscar..." />
+                <a href="index.html" class="login-btn logout">Cerrar sesión</a>
             </div>
         </nav>
 
@@ -23,7 +23,7 @@
             <aside class="sidebar">
                 <a href="dashboard.html" class="nav-btn active">Cargos</a>
                 <a href="empleados.html" class="nav-btn">Empleados</a>
-                <a href="index.html" class="logout"><span>⎋</span> Cerrar sesión</a>
+                <a href="#" class="logout"><span>⎋</span> Cerrar sesión</a>
             </aside>
 
             <!-- Contenido principal -->
@@ -32,58 +32,11 @@
                     <div style="display:flex;align-items:center;justify-content:end;">
                         <button class="btn" style="width:auto;padding:0.5rem 1rem;">+ Nuevo</button>
                     </div>
-                    <div class="main-list">
-                        <div class="main-card green cargo">
-                            <div class="logo-circle-container">
-                                <div class="title">Cocina</div>
-                                <div class="logo-circle">🍳</div>
-                            </div>
-                            <p class="description">Responsables de la preparación de alimentos.</p>
-                            <div class="extra-info">
-                                <span>Empleados: 12</span>
-                                <button class="mini-btn">Ver más</button>
-                            </div>
-                        </div>
-                    
-                        <div class="main-card red cargo">
-                            <div class="logo-circle-container">
-                                <div class="title">Limpieza</div>
-                                <div class="logo-circle">🧹</div>
-                            </div>
-                            <p class="description">Encargados de mantener los espacios limpios y ordenados.</p>
-                            <div class="extra-info">
-                                <span>Empleados: 8</span>
-                                <button class="mini-btn">Ver más</button>
-                            </div>
-                        </div>
-                    
-                        <div class="main-card blue cargo">
-                            <div class="logo-circle-container">
-                                <div class="title">Docentes</div>
-                                <div class="logo-circle">📚</div>
-                            </div>
-                            <p class="description">Encargados de impartir clases y guiar a los estudiantes.</p>
-                            <div class="extra-info">
-                                <span>Empleados: 20</span>
-                                <button class="mini-btn">Ver más</button>
-                            </div>
-                        </div>
-                    
-                        <div class="main-card yellow cargo">
-                            <div class="logo-circle-container">
-                                <div class="title">Otros</div>
-                                <div class="logo-circle">✏️</div>
-                            </div>
-                            <p class="description">Personal de apoyo y otras funciones administrativas.</p>
-                            <div class="extra-info">
-                                <span>Empleados: 5</span>
-                                <button class="mini-btn">Ver más</button>
-                            </div>
-                        </div>
-                    </div>
+                    <div class="main-list" id="cargo-list"></div>
                 </section>
             </div>
         </div>
     </div>
+    <script src="js/cargos.js"></script>
 </body>
 </html>

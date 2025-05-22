@@ -1,19 +1,24 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Login - Gestión de Empleados</title>
-    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
     <div class="card" style="margin-top: 5vh;">
         <div class="logo-circle">Logo</div>
+
         <div class="label">Usuario</div>
-        <input class="input" type="text" placeholder="Ingresa tu usuario" />
+        <input id="usuario" class="input" type="text" placeholder="Ingresa tu usuario" />
+
         <div class="label">Contraseña</div>
-        <input class="input" type="password" placeholder="Ingresa tu contraseña" />
-        <a href="dashboard.html" class="btn">Iniciar sesión</a>
+        <input id="contrasena" class="input" type="password" placeholder="Ingresa tu contraseña" />
+
+        <button id="login-btn" class="btn">Iniciar sesión</button>
     </div>
+
+    <script src="js/auth.js"></script>
 </body>
 </html>

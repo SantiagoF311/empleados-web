@@ -1,24 +1,32 @@
-const express = require('express');
+const express = require('express'); 
+const cors = require('cors'); // <-- importa cors
+
 const app = express();
+
+app.use(cors({
+  origin: '*', // o 'http://localhost:5500' de forma específica
+  exposedHeaders: ['Authorization']
+}));
 
 app.use(express.json());
 
-// Importar rutas
 const authRoutes = require('./routes/auth');
 const cargosRoutes = require('./routes/cargos');
 const empleadosRoutes = require('./routes/empleados');
+const verificarToken = require('./services/authMiddleware');
 
-// Usar rutas
-app.use('/api/auth', authRoutes);
-app.use('/api/cargos', cargosRoutes);
-app.use('/api/empleados', empleadosRoutes);
+// Rutas públicas
+app.use('/auth', authRoutes);
+
+// Rutas protegidas
+app.use('/cargos', verificarToken, cargosRoutes);
+app.use('/empleados', verificarToken, empleadosRoutes);
 
 // Ruta de prueba
 app.get('/', (req, res) => {
   res.send('API funcionando');
 });
 
-// Iniciar servidor
 app.listen(5000, () => {
   console.log('Servidor en http://localhost:5000');
 });
