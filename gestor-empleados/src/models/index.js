@@ -4,69 +4,76 @@ const path = require('path');
 const sequelize = new Sequelize({
   dialect: 'sqlite',
   storage: path.join(__dirname, '../db/database.sqlite'),
-  logging: false
+  logging: console.log
 });
 
 // Importar modelos
-const Usuario = require('../models/Usuario')(sequelize);
-const Cargo = require('../models/Cargo')(sequelize);
-const Empleado = require('../models/Empleado')(sequelize);
+const Usuario = require('./Usuario')(sequelize);
+const Cargo = require('./Cargo')(sequelize);
+const Empleado = require('./Empleado')(sequelize);
+const Calificacion = require('./Calificacion')(sequelize);
 
 // Definir relaciones
-Cargo.hasMany(Empleado);
-Empleado.belongsTo(Cargo);
+Cargo.hasMany(Empleado, { foreignKey: 'CargoId', as: 'Empleados' });
+Empleado.belongsTo(Cargo, { foreignKey: 'CargoId', as: 'Cargo' });
+Empleado.hasMany(Calificacion, { foreignKey: 'EmpleadoId', as: 'Calificaciones' });
+Calificacion.belongsTo(Empleado, { foreignKey: 'EmpleadoId', as: 'Empleado' });
 
 async function initializeDatabase() {
   try {
     await sequelize.sync({ force: true });
 
-    // Usuario admin
+    // Datos iniciales
     await Usuario.create({ usuario: 'admin', contrasena: 'admin123' });
 
-    // Crea cargos con colores válidos según tu CSS
     const cargo1 = await Cargo.create({
       nombre: 'Gerente',
-      color: 'blue', // no "azul", es inglés para coincidir con CSS
-      descripcion: 'Encargado general de la empresa'
+      color: 'blue',
+      descripcion: 'Responsable de departamento'
     });
+
     const cargo2 = await Cargo.create({
       nombre: 'Desarrollador',
-      color: 'green', // no "verde"
+      color: 'green',
       descripcion: 'Desarrollo de software'
     });
 
-    // Empleados asignados a cargos
     await Empleado.create({
       nombre: 'Ana Pérez',
-      area: 'Dirección',
-      turno: 'Mañana',
+      cedula: '10000001',
+      area: 'TI',
+      turno: 'AM',
       estado: 'activo',
-      icono: '👩‍💼',
-      descripcion: 'Directora general',
+      icono: '👩‍💻',
       CargoId: cargo1.id
     });
 
     await Empleado.create({
-      nombre: 'Carlos López',
-      area: 'TI',
-      turno: 'Tarde',
-      estado: 'pendiente',
-      icono: '💻',
-      descripcion: 'Programador backend',
+      nombre: 'Carlos Gómez',
+      cedula: '10000002',
+      area: 'Soporte',
+      turno: 'PM',
+      estado: 'activo',
+      icono: '👨‍💼',
       CargoId: cargo2.id
     });
 
-    console.log('✅ Base de datos inicializada con datos de ejemplo');
+    console.log('✅ Base de datos inicializada correctamente');
   } catch (error) {
     console.error('❌ Error al inicializar la base de datos:', error);
+    throw error;
   }
 }
 
-initializeDatabase();
+// Solo inicializar si no estamos en entorno de pruebas
+if (process.env.NODE_ENV !== 'test') {
+  initializeDatabase();
+}
 
 module.exports = {
   sequelize,
   Usuario,
   Cargo,
-  Empleado
+  Empleado,
+  Calificacion
 };

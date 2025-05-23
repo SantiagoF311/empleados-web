@@ -1,19 +1,35 @@
 const { Sequelize, DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
-  return sequelize.define('Cargo', {
+  const Cargo = sequelize.define('Cargo', {
     nombre: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: false,
+      validate: {
+        notEmpty: true
+      }
     },
     color: {
       type: DataTypes.STRING,
       allowNull: false,
-      defaultValue: 'green' // por si no se especifica
+      defaultValue: 'green'
     },
     descripcion: {
       type: DataTypes.STRING,
       allowNull: true
     }
+  }, {
+    tableName: 'Cargos',
+    timestamps: true
   });
+
+  Cargo.associate = function(models) {
+    Cargo.hasMany(models.Empleado, {
+      foreignKey: 'CargoId',
+      as: 'Empleados',
+      onDelete: 'SET NULL'
+    });
+  };
+
+  return Cargo;
 };
