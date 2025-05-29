@@ -5,21 +5,16 @@ const SECRET_KEY = 'laurenesbova';
 
 module.exports = {
   login: async (req, res) => {
-    console.log("Body recibido:", req.body);
     const { usuario, contrasena } = req.body;
-    console.log('usuario:', usuario); // depuración
-    console.log('contrasena:', contrasena); // depuración
 
     if (!usuario || !contrasena) {
       return res.status(400).json({ mensaje: 'Faltan credenciales' });
     }
 
-    // Buscar el usuario en la base de datos
     const user = await Usuario.findOne({ where: { usuario, contrasena } });
 
     if (user) {
-      // Generar token
-      const token = jwt.sign({ usuario: user.usuario }, SECRET_KEY, { expiresIn: '1h' });
+      const token = jwt.sign({ usuario: user.usuario }, SECRET_KEY);
 
       return res.json({ mensaje: 'Autenticado correctamente', token });
     }

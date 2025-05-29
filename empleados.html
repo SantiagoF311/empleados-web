@@ -28,12 +28,21 @@
       <!-- Contenido -->
       <div class="main-content">
         <section>
+
           <div class="empleados-toolbar">
+
+
             <select id="filtroCargo" class="input">
               <option value="">Todos los cargos</option>
             </select>
+
+
+
             <button id="nuevoEmpleadoBtn" class="btn">+ Nuevo</button>
+
+
           </div>
+          
           <div class="main-list" id="empleados-list"></div>
         </section>
       </div>
@@ -49,6 +58,10 @@
           <div class="form-group">
             <label class="label" for="nombreEmpleado">Nombre:</label>
             <input class="input" type="text" id="nombreEmpleado" required>
+          </div>
+          <div class="form-group">
+            <label class="label" for="cedulaEmpleado">Cédula:</label>
+            <input class="input" type="text" id="cedulaEmpleado" required>
           </div>
           <div class="form-group">
             <label class="label" for="cargoEmpleado">Cargo:</label>

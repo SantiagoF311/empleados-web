@@ -276,6 +276,7 @@ html, body {
   background: #f3f8fa;
   font-size: 1rem;
   outline: none;
+  margin-bottom: 1rem;
 }
 
 .label {

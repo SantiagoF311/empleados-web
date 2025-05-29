@@ -1,10 +1,34 @@
 const { Empleado, Cargo, Calificacion } = require('../models');
-const { Parser } = require('json2csv');
+const XLSX = require('xlsx');
+const path = require('path');
+const fs = require('fs');
+const archiver = require('archiver');
 
 module.exports = {
   async crear(req, res) {
     try {
-      const { CargoId, ...empleadoData } = req.body;
+      console.log('Datos recibidos:', req.body);
+      const { CargoId, nombre, turno, estado, ...empleadoData } = req.body;
+
+      // Validar campos requeridos
+      if (!nombre) {
+        return res.status(400).json({ error: 'El nombre del empleado es requerido' });
+      }
+      if (!turno) {
+        return res.status(400).json({ error: 'El turno del empleado es requerido' });
+      }
+      if (!estado) {
+        return res.status(400).json({ error: 'El estado del empleado es requerido' });
+      }
+
+      // Validar estado
+      const estadosValidos = ['activo', 'pendiente', 'inactivo'];
+      if (!estadosValidos.includes(estado)) {
+        return res.status(400).json({ 
+          error: 'Estado inválido',
+          detalles: `El estado debe ser uno de: ${estadosValidos.join(', ')}`
+        });
+      }
 
       // Verificar si el cargo existe
       if (CargoId) {
@@ -14,24 +38,39 @@ module.exports = {
         }
       }
 
-      const empleado = await Empleado.create({
-        ...empleadoData,
-        CargoId: CargoId || null
-      });
+      try {
+        const empleado = await Empleado.create({
+          nombre,
+          turno,
+          estado,
+          CargoId: CargoId || null,
+          ...empleadoData
+        });
 
-      // Obtener el empleado con relaciones
-      const empleadoConCargo = await Empleado.findByPk(empleado.id, {
-        include: {
-          model: Cargo,
-          as: 'Cargo'
-        }
-      });
+        // Obtener el empleado con relaciones
+        const empleadoConCargo = await Empleado.findByPk(empleado.id, {
+          include: {
+            model: Cargo,
+            as: 'Cargo'
+          }
+        });
 
-      res.status(201).json(empleadoConCargo);
+        res.status(201).json(empleadoConCargo);
+      } catch (dbError) {
+        console.error('Error de base de datos:', dbError);
+        return res.status(400).json({ 
+          error: 'Error al crear empleado en la base de datos',
+          detalles: dbError.message,
+          tipo: dbError.name
+        });
+      }
     } catch (error) {
+      console.error('Error al crear empleado:', error);
       res.status(400).json({ 
         error: 'Error al crear empleado',
-        detalles: error.message 
+        detalles: error.message,
+        tipo: error.name,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       });
     }
   },
@@ -149,7 +188,7 @@ module.exports = {
     }
   },
 
-  async exportarTodasCalificacionesCSV(req, res) {
+  async exportarTodasCalificaciones(req, res) {
     try {
       // Definir los criterios con texto completo y orden
       const criteriosCalificacion = [
@@ -190,54 +229,124 @@ module.exports = {
           nombre: 'Remisión a las autoridades competentes los casos de maltrato infantil'
         }
       ];
+
+      // Obtener todos los empleados con sus calificaciones
       const empleados = await Empleado.findAll({
         include: [
           { model: Cargo, as: 'Cargo' },
           { model: Calificacion, as: 'Calificaciones' }
         ]
       });
-      const rows = [];
-      empleados.forEach(empleado => {
+
+      // Crear directorio para los archivos si no existe
+      const exportDir = path.join(__dirname, '../../exports');
+      if (!fs.existsSync(exportDir)) {
+        fs.mkdirSync(exportDir, { recursive: true });
+      }
+
+      // Array para almacenar los archivos creados
+      const archivos = [];
+
+      // Crear un archivo Excel por cada empleado que tenga calificaciones
+      for (const empleado of empleados) {
         if (empleado.Calificaciones && empleado.Calificaciones.length > 0) {
-          // Tomar la última calificación
-          const calificacion = empleado.Calificaciones[empleado.Calificaciones.length - 1];
-          const criterios = calificacion.criterios;
-          criteriosCalificacion.forEach((criterio, idx) => {
-            rows.push({
-              cedula: idx === 0 ? empleado.cedula || '' : '',
-              nombre: idx === 0 ? empleado.nombre : '',
-              cargo: idx === 0 ? (empleado.Cargo ? empleado.Cargo.nombre : '') : '',
-              criterio: criterio.nombre,
-              cumple: criterios[criterio.id] || ''
+          // Crear un nuevo libro de Excel
+          const wb = XLSX.utils.book_new();
+
+          // Preparar los datos para la hoja de calificaciones
+          const calificacionesData = [
+            ['INFORMACIÓN DEL EMPLEADO'],
+            ['Cédula:', empleado.cedula || 'No especificada'],
+            ['Nombre:', empleado.nombre],
+            ['Cargo:', empleado.Cargo ? empleado.Cargo.nombre : 'No asignado'],
+            [], // Línea en blanco
+            ['CRITERIOS DE CALIFICACIÓN'],
+            ['Criterio', 'Calificación', 'Fecha']
+          ];
+
+          // Agregar las calificaciones
+          empleado.Calificaciones.forEach(calificacion => {
+            const fecha = new Date(calificacion.fecha).toLocaleDateString();
+            criteriosCalificacion.forEach(criterio => {
+              calificacionesData.push([
+                criterio.nombre,
+                calificacion.criterios[criterio.id] || 'No calificado',
+                fecha
+              ]);
             });
           });
-          // Agregar línea en blanco después de cada empleado
-          rows.push({
-            cedula: '',
-            nombre: '',
-            cargo: '',
-            criterio: '',
-            cumple: ''
-          });
+
+          // Crear la hoja de calificaciones
+          const ws = XLSX.utils.aoa_to_sheet(calificacionesData);
+
+          // Ajustar el ancho de las columnas
+          const wscols = [
+            { wch: 100 }, // Ancho para la columna de criterios
+            { wch: 20 },  // Ancho para la columna de calificación
+            { wch: 15 }   // Ancho para la columna de fecha
+          ];
+          ws['!cols'] = wscols;
+
+          // Agregar la hoja al libro
+          XLSX.utils.book_append_sheet(wb, ws, 'Calificaciones');
+
+          // Generar nombre de archivo
+          const fileName = `calificaciones_${empleado.cedula || empleado.id}_${empleado.nombre.replace(/[^a-z0-9]/gi, '_')}.xlsx`;
+          const filePath = path.join(exportDir, fileName);
+
+          // Guardar el archivo Excel
+          XLSX.writeFile(wb, filePath);
+          archivos.push({ name: fileName, path: filePath });
         }
-      });
-      if (rows.length === 0) {
+      }
+
+      if (archivos.length === 0) {
         return res.status(404).json({ error: 'No hay calificaciones para exportar' });
       }
-      const fields = [
-        { label: 'Cedula', value: 'cedula' },
-        { label: 'Nombre', value: 'nombre' },
-        { label: 'Cargo', value: 'cargo' },
-        { label: 'Criterio', value: 'criterio' },
-        { label: 'cumple(si/no/nA)', value: 'cumple' }
-      ];
-      const parser = new Parser({ fields });
-      const csv = parser.parse(rows);
-      res.header('Content-Type', 'text/csv');
-      res.attachment('calificaciones_empleados.csv');
-      return res.send(csv);
+
+      // Crear archivo ZIP
+      const zipPath = path.join(exportDir, 'calificaciones_empleados.zip');
+      const output = fs.createWriteStream(zipPath);
+      const archive = archiver('zip', {
+        zlib: { level: 9 }
+      });
+
+      // Configurar el archivo ZIP
+      output.on('close', () => {
+        // Enviar el archivo ZIP
+        res.download(zipPath, 'calificaciones_empleados.zip', (err) => {
+          if (err) {
+            console.error('Error al enviar el archivo:', err);
+          }
+          // Limpiar archivos después de enviarlos
+          archivos.forEach(file => {
+            if (fs.existsSync(file.path)) {
+              fs.unlinkSync(file.path);
+            }
+          });
+          if (fs.existsSync(zipPath)) {
+            fs.unlinkSync(zipPath);
+          }
+        });
+      });
+
+      archive.on('error', (err) => {
+        throw err;
+      });
+
+      archive.pipe(output);
+
+      // Agregar cada archivo Excel al ZIP
+      archivos.forEach(file => {
+        archive.file(file.path, { name: file.name });
+      });
+
+      // Finalizar el archivo ZIP
+      await archive.finalize();
+
     } catch (error) {
-      res.status(500).json({ error: 'Error al exportar CSV', detalles: error.message });
+      console.error('Error al exportar:', error);
+      res.status(500).json({ error: 'Error al exportar calificaciones', detalles: error.message });
     }
   },
 

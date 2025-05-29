@@ -1,4 +1,5 @@
-const router = require('express').Router();
+const express = require('express');
+const router = express.Router();
 const {
   crear,
   listar,
@@ -6,18 +7,18 @@ const {
   actualizar,
   eliminar,
   calificar,
-  exportarCalificacionCSV,
-  exportarTodasCalificacionesCSV,
+  exportarTodasCalificaciones,
   listarCalificaciones
 } = require('../controllers/empleadosController');
+const { verificarToken } = require('../middleware/auth');
 
-router.post('/', crear);
-router.get('/', listar);
-router.get('/:id', obtener);
-router.put('/:id', actualizar);
-router.delete('/:id', eliminar);
-router.post('/:id/calificacion', calificar);
-router.get('/calificaciones/csv', exportarTodasCalificacionesCSV);
-router.get('/:id/calificaciones', listarCalificaciones);
+router.post('/', verificarToken, crear);
+router.get('/', verificarToken, listar);
+router.get('/:id', verificarToken, obtener);
+router.put('/:id', verificarToken, actualizar);
+router.delete('/:id', verificarToken, eliminar);
+router.post('/:id/calificar', verificarToken, calificar);
+router.get('/:id/calificaciones', verificarToken, listarCalificaciones);
+router.get('/calificaciones/exportar', verificarToken, exportarTodasCalificaciones);
 
 module.exports = router;

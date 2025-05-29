@@ -30,23 +30,48 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Form submission
   document.getElementById('empleadoForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    
+    const modal = document.getElementById('empleadoModal');
     const empleadoId = document.getElementById('empleadoId').value;
-    const empleadoData = {
-      nombre: document.getElementById('nombreEmpleado').value,
-      CargoId: document.getElementById('cargoEmpleado').value,
-      turno: document.getElementById('turnoEmpleado').value,
-      estado: document.getElementById('estadoEmpleado').value,
-      icono: document.getElementById('iconoEmpleado').value,
-      descripcion: document.getElementById('descripcionEmpleado').value
-    };
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      alert('No autorizado. Por favor inicia sesión.');
+      window.location.href = 'index.html';
+      return;
+    }
 
     try {
-      const token = localStorage.getItem('token');
+      const empleadoData = {
+        nombre: document.getElementById('nombreEmpleado').value,
+        CargoId: document.getElementById('cargoEmpleado').value,
+        turno: document.getElementById('turnoEmpleado').value,
+        estado: document.getElementById('estadoEmpleado').value,
+        icono: document.getElementById('iconoEmpleado').value,
+        descripcion: document.getElementById('descripcionEmpleado').value,
+        cedula: document.getElementById('cedulaEmpleado').value
+      };
+
+      // Validar campos requeridos
+      if (!empleadoData.nombre) {
+        throw new Error('El nombre del empleado es requerido');
+      }
+      if (!empleadoData.CargoId) {
+        throw new Error('El cargo del empleado es requerido');
+      }
+      if (!empleadoData.turno) {
+        throw new Error('El turno del empleado es requerido');
+      }
+      if (!empleadoData.estado) {
+        throw new Error('El estado del empleado es requerido');
+      }
+      if (!empleadoData.cedula) {
+        throw new Error('La cédula del empleado es requerida');
+      }
+
       const url = empleadoId 
         ? `http://localhost:5000/empleados/${empleadoId}`
         : 'http://localhost:5000/empleados';
-      
+
       const response = await fetch(url, {
         method: empleadoId ? 'PUT' : 'POST',
         headers: {
@@ -56,16 +81,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         body: JSON.stringify(empleadoData)
       });
 
-      if (!response.ok) throw new Error('Error al guardar empleado');
-      
-      const empleadoGuardado = await response.json();
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error('Error response:', data);
+        throw new Error(data.error || data.detalles || 'Error al guardar empleado');
+      }
       
       modal.style.display = 'none';
       document.getElementById('empleadoForm').reset();
       await cargarEmpleados();
     } catch (error) {
-      console.error('Error:', error);
-      alert('Error al guardar el empleado: ' + error.message);
+      console.error('Error completo:', error);
+      console.error('Datos del empleado:', empleadoData);
+      alert(`Error al guardar el empleado: ${error.message}`);
     }
   });
 
@@ -74,7 +103,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   exportBtn.className = 'btn';
   exportBtn.textContent = 'Exportar Calificaciones';
   exportBtn.style.width = 'auto';
-  exportBtn.onclick = exportarTodasCalificaciones;
+  exportBtn.onclick = exportarCalificaciones;
   const mainContent = document.querySelector('.main-content section');
   mainContent.insertBefore(exportBtn, mainContent.firstChild);
 
@@ -100,7 +129,7 @@ async function cargarCargosParaSelect() {
     const filtroCargo = document.getElementById('filtroCargo');
     // Limpiar opciones existentes (excepto la primera)
     while (selectCargo && selectCargo.options.length > 1) selectCargo.remove(1);
-    if (filtroCargo) filtroCargo.innerHTML = '<option value="">Todos los cargos</option>';
+    if (filtroCargo) filtroCargo.innerHTML = '<option value="">Todos los empleados</option>';
     // Agregar nuevas opciones
     cargos.forEach(cargo => {
       if (selectCargo) {
@@ -233,6 +262,7 @@ async function editarEmpleado(id) {
     document.getElementById('modalTitle').textContent = 'Editar Empleado';
     document.getElementById('empleadoId').value = empleado.id;
     document.getElementById('nombreEmpleado').value = empleado.nombre;
+    document.getElementById('cedulaEmpleado').value = empleado.cedula;
     document.getElementById('cargoEmpleado').value = empleado.CargoId;
     document.getElementById('turnoEmpleado').value = empleado.turno;
     document.getElementById('estadoEmpleado').value = empleado.estado;
@@ -361,7 +391,7 @@ document.getElementById('calificacionForm').addEventListener('submit', async (e)
 
   try {
     const token = localStorage.getItem('token');
-    const response = await fetch(`http://localhost:5000/empleados/${empleadoId}/calificacion`, {
+    const response = await fetch(`http://localhost:5000/empleados/${empleadoId}/calificar`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -386,26 +416,30 @@ document.querySelector('#calificacionModal .close').onclick = function() {
   document.getElementById('calificacionModal').style.display = 'none';
 }
 
-window.exportarTodasCalificaciones = async function() {
-  const token = localStorage.getItem('token');
+async function exportarCalificaciones() {
   try {
-    const response = await fetch('http://localhost:5000/empleados/calificaciones/csv', {
-      headers: { Authorization: `Bearer ${token}` }
+    const response = await fetch('http://localhost:5000/empleados/calificaciones/exportar', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
     });
+
     if (!response.ok) {
-      alert('No hay calificaciones para exportar');
-      return;
+      throw new Error('Error al exportar calificaciones');
     }
+
     const blob = await response.blob();
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'calificaciones_empleados.csv';
+    a.download = 'calificaciones_empleados.zip';
     document.body.appendChild(a);
     a.click();
-    a.remove();
     window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
   } catch (error) {
-    alert('Error al exportar las calificaciones');
+    console.error('Error:', error);
+    alert('Error al exportar calificaciones');
   }
 }

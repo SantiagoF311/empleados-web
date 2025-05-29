@@ -53,8 +53,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (!response.ok) throw new Error('Error al guardar cargo');
       
-      const cargoGuardado = await response.json();
-      
       modal.style.display = 'none';
       document.getElementById('cargoForm').reset();
       await cargarCargos();
@@ -64,8 +62,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  document.getElementById('filtroCargoDashboard').addEventListener('change', renderCargos);
-  document.querySelector('.search').addEventListener('input', renderCargos);
+  // Solo agregar event listener para la búsqueda
+  const searchInput = document.querySelector('.search');
+  if (searchInput) {
+    searchInput.addEventListener('input', renderCargos);
+  }
 });
 
 async function cargarCargos() {
@@ -77,7 +78,6 @@ async function cargarCargos() {
     if (!response.ok) throw new Error('Error al cargar cargos');
     cargosGlobal = await response.json();
     renderCargos();
-    cargarCargosParaFiltro();
   } catch (error) {
     document.getElementById('cargos-list').innerHTML = '<p>Error al cargar los cargos.</p>';
   }
@@ -86,6 +86,7 @@ async function cargarCargos() {
 function cargarCargosParaFiltro() {
   const filtro = document.getElementById('filtroCargoDashboard');
   if (!filtro) return;
+  
   filtro.innerHTML = '<option value="">Todos los cargos</option>';
   cargosGlobal.forEach(cargo => {
     const option = document.createElement('option');
@@ -98,11 +99,10 @@ function cargarCargosParaFiltro() {
 function renderCargos() {
   const contenedor = document.getElementById('cargos-list');
   contenedor.innerHTML = '';
-  const filtroCargo = document.getElementById('filtroCargoDashboard')?.value || '';
   const busqueda = document.querySelector('.search')?.value.trim().toLowerCase() || '';
+  
   cargosGlobal
     .filter(cargo => {
-      if (filtroCargo && String(cargo.id) !== filtroCargo) return false;
       return cargo.nombre.toLowerCase().includes(busqueda);
     })
     .forEach(cargo => {
@@ -138,6 +138,7 @@ async function editarCargo(id) {
     
     // Llenar el formulario con los datos del cargo
     document.getElementById('modalTitle').textContent = 'Editar Cargo';
+    
     document.getElementById('cargoId').value = cargo.id;
     document.getElementById('nombreCargo').value = cargo.nombre;
     document.getElementById('colorCargo').value = cargo.color;
